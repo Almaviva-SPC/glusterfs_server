@@ -13,14 +13,14 @@
     state: latest
   when: gluster_repo|succeeded
   
-  - name: Create mount Point Folder
+- name: Create mount Point Folder
   file:
     path: "{{gluster_mount_dir}}"
     state: directory
     owner: root
     group: root
     mode: 0775
-register: folder_created
+  register: folder_created
 
 - name: Edit fstab and mount the XFS volume
   mount:
