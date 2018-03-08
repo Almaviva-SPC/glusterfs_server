@@ -1,0 +1,112 @@
+---
+#Tasks install and start "glusterd" service
+
+- name: Install GlusterFS repository
+  yum: 
+    name: centos-release-gluster
+    state: latest
+  register: gluster_repo
+
+- name: Install GlusterFS server
+  yum: 
+    name: glusterfs-server
+    state: latest
+  when: gluster_repo|succeeded
+  register: gluster_server
+
+- name: Enable & Start GlusterFS
+  service:
+    name: glusterd
+    state: started
+    enabled: yes
+  when: gluster_server|succeeded
+  register: glusterd_start
+
+- name: Set name and format gluster disk
+  set_fact:
+    version: "{{glusterdev_name}}"
+  
+- name: Create partition for LVM
+  parted:
+    device: "/dev/{{glusterdev_name}}"
+    number: 1
+    flags: [ lvm ]
+    state: present
+    part_start: 0%
+    part_end: 100%
+  register: lvm_format
+
+- name: Create volume group
+  lvg:
+    vg: vg_brick
+    pvs: "/dev/{{glusterdev_name}}1"
+    state: present
+  when: lvm_format|succeeded
+  register: vg_create
+
+- name: Create logical volume
+  lvol:
+    vg: vg_brick
+    lv: lv_brick0
+    size: 100%VG
+    active: yes
+    state: present
+  when: vg_create|succeeded
+  register: lv_create
+
+- name: Format volume with XFS
+  filesystem: 
+    fstype: xfs 
+    dev: /dev/vg_brick/lv_brick0
+  when: lv_create|succeeded
+  register: xfs_format
+
+- name: Verify Gluster brick directory
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0775
+  with_items:
+    - "{{gluster_brick_dir}}"
+
+- name: Edit fstab and mount the XFS volume
+  mount:
+    name: "{{gluster_brick_dir}}"
+    src: /dev/vg_brick/lv_brick0
+    fstype: xfs
+    opts: "noatime"
+    state: mounted
+
+- name: Check if Gluster volumes already exist
+  shell: "gluster volume info"
+  changed_when: false
+  register: gluster_volume_info
+  when: glusterd_start|succeeded
+
+- name: Configure Gluster volume cluster replica
+  gluster_volume:
+    state: present
+    name: "{{ gluster_brick_name }}"
+    bricks: "{{ gluster_brick_dir }}"
+    transport: tcp
+    replicas: "{{ groups.glusterfs_server | length }}"
+    cluster: "{{ groups.glusterfs_server | join(',') }}"
+    host: "{{ inventory_hostname }}"
+    force: yes
+  run_once: true
+  when: gluster_volume_info|succeeded
+  register: configure_volume
+
+- name: Start Gluster Volume
+  gluster_volume:
+    state: started
+    name: "{{ gluster_brick_name }}"
+  ignore_errors: True
+  when: configure_volume|succeeded
+
+- name: Check gluster volume info
+  shell: "gluster volume info"
+  register: gluster_volume_info
+
+- debug:
+        var: gluster_volume_info.stdout_lines

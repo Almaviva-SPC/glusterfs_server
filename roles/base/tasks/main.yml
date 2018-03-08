@@ -1,0 +1,72 @@
+- name: Install EPEL
+  yum:
+    pkg: epel-release
+    state: installed
+    update_cache: true
+  register: install_epel
+
+- name: Enable sudo autocompletition
+  lineinfile:
+    path: .bashrc
+    regexp: "^complete"
+    line: "complete -cf sudo"
+
+- name: Check for rc.local custom settings
+  shell: grep -r "^iptables -F" /etc/rc.local || true
+  register: test_grep_spc
+
+- name: Reset iptables and transparent hugepages at startup in rc.local
+  lineinfile:
+    path: /etc/rc.local
+    line: "echo never > /sys/kernel/mm/transparent_hugepage/defrag\necho never > /sys/kernel/mm/transparent_hugepage/enabled\niptables -F -t filter\niptables -F -t nat\niptables -F -t mangle"
+  when: test_grep_spc.stdout == ""
+
+- name: Reset iptables and transparent hugepages
+  shell: "echo never > /sys/kernel/mm/transparent_hugepage/defrag && echo never > /sys/kernel/mm/transparent_hugepage/enabled && iptables -F -t filter && iptables -F -t nat && iptables -F -t mangle"
+
+- name: Disable GSS API
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^GSSAPIAuthentication yes"
+    line: "#GSSAPIAuthentication yes"
+  register: disable_gssapi
+
+- name: Make rc.local executable
+  file: 
+    path: /etc/rc.d/rc.local
+    mode: 0755
+  register: rclocal_excutable
+
+- name: Install basic utilities
+  yum: 
+    pkg: "{{item}}"
+    state: installed
+    update_cache: true
+  register: install_utils
+  when: install_epel|succeeded
+  with_items:
+    - dstat
+    - tree
+    - telnet
+    - tcpdump
+    - vim
+    - lvm2
+    - yum-utils
+    - device-mapper-persistent-data
+
+- name: Restart SSHD
+  service:
+    name: sshd
+    state: restarted
+    enabled: yes
+  when: 
+  - disable_gssapi|succeeded
+
+- name: (Re)Start rc.local
+  service:
+    name: rc-local.service
+    state: restarted
+    enabled: yes
+  when: 
+  - rclocal_excutable|succeeded
+

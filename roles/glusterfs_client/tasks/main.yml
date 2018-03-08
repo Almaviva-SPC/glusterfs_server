@@ -1,0 +1,22 @@
+---
+#Tasks install and start "glusterd" service
+
+- name: Install GlusterFS repository
+  yum: 
+    name: centos-release-gluster
+    state: latest
+  register: gluster_repo
+
+- name: Install GlusterFS client
+  yum: 
+    name: glusterfs-client
+    state: latest
+  when: gluster_repo|succeeded
+
+- name: Edit fstab and mount the XFS volume
+  mount:
+    name: "{{gluster_brick_dir}}"
+    src: "{{groups.daf_glusterfs_server[0]}}:/{{gluster_brick_name}}"
+    fstype: glusterfs
+    opts: "noatime"
+    state: mounted

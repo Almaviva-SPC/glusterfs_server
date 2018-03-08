@@ -1,0 +1,3 @@
+glusterdev_name: sdb
+gluster_brick_dir: /bricks/brick0
+gluster_brick_name: glustervol0

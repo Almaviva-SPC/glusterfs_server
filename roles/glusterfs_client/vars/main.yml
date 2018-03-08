@@ -1,0 +1,2 @@
+gluster_brick_name: glustervol0
+gluster_brick_dir: /mnt/glusterfs
