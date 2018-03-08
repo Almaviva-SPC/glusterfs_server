@@ -1,5 +1,4 @@
 - hosts: glusterfs_server
   become: true
   roles:
-    - base
     - glusterfs_server
