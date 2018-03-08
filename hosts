@@ -1,3 +1,3 @@
 [glusterfs_server]
-<ip_nodo> ansible_user=centos
-<ip_nodo> ansible_user=centos
+<ip_nodo> 
+<ip_nodo> 
