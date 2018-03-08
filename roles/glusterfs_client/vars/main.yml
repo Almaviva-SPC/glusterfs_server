@@ -1,2 +1,2 @@
 gluster_volume_name: glustervol0
-gluster_mount_dir: /mnt/glusterfs
+gluster_mount_dir: /glusterfs/volume1
