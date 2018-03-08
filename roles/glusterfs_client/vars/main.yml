@@ -1,2 +1,2 @@
-gluster_brick_name: glustervol0
-gluster_brick_dir: /mnt/glusterfs
+gluster_volume_name: glustervol0
+gluster_mount_dir: /mnt/glusterfs
