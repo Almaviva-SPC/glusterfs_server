@@ -25,7 +25,7 @@
 - name: Edit fstab and mount the XFS volume
   mount:
     name: "{{gluster_mount_dir}}"
-    src: "{{groups.glusterfs_server[0]}}:/{{gluster_volume_name}}"
+    src: "{{groups.all[0]}}:/{{gluster_volume_name}}"
     fstype: glusterfs
     opts: "noatime"
     state: mounted
