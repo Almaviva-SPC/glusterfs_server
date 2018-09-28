@@ -89,8 +89,8 @@
     name: "{{ gluster_brick_name }}"
     bricks: "{{ gluster_brick_dir }}"
     transport: tcp
-    replicas: "{{ groups.glusterfs_server | length }}"
-    cluster: "{{ groups.glusterfs_server | join(',') }}"
+    replicas: "{{ groups.all | length }}"
+    cluster: "{{ groups.all | join(',') }}"
     host: "{{ inventory_hostname }}"
     force: yes
   run_once: true
